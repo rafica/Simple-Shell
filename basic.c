@@ -18,6 +18,7 @@ int main(){
 	char *token;
 	char *arg[100];
 	int i=0;
+	char *directory;
 
 	while(y<max_commands){
 		y++;
@@ -35,9 +36,19 @@ int main(){
 		}
 
 
-		if(strcmp(arg[0], "exit")==0)
+		if(strcmp(arg[0], "exit")==0){
 			exit(0);
+		}
+		else if(strcmp(arg[0], "cd")==0){
+			directory = arg[1];
+			if(chdir(directory)<0){
+				printf("error: %s\n", strerror(errno));
+			}
+			
+		}
 
+
+		
 		
 		
 	        //after using the command
