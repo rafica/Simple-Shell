@@ -1,0 +1,39 @@
+3) Yes. On error, fork returns -1 and errno variable is set to indicate the type of error. Error can occur on following conditions:
+	*  If the limit on total number of processes under execution is exceeded.
+	*  If the limit on total number of processes under execution by a single user is exceeded.
+	*  If there is insufficient swap space for the new process.
+
+4) Yes. On error, exec returns -1 and errno variable is set to indicate the type of error. Error can occur on following conditions:
+	* When the pathname given is wrong.
+	* When the program is missing in that path
+	* When there is an error in the program
+5) The first fork() creates a parent and child process. The condition is true for both the copies since fork() returns the child's pid( a positive value) which is greater than 0. fork() returns 0 for the child process which is equal to zero in the condition. Hence the while is executed again in both the copies. 
+Each process creates a copy of itself and while gets executed infinite times in each process creating infinite number of processes exponentially. The condition in the while loop will always be true except when the fork() returns -1 on error. 
+This is called a fork bomb and causes depletion of system resources. This results in crashing of the system.
+
+6) 
+
+7) If I run exec ls, ls program gets executed and then the shell gets terminated.
+    Why? because exec wipes out the current program and replaces the current program space with the new program. Hence after the new program gets executed, the shell program doesnt wait for the ls program and terminates.
+
+8)  32 processes are created totally.
+ Because the function gets called 5 times. Each time, a duplicate process is created for each process. Hence total number of processes is 2^5 = 32.
+
+9) Three copies of x is created. x = 20, x = 15, x = 10.
+			          x
+				/   \
+			      x=5   x=10
+			      / \
+			   x=15  x=20
+
+
+10) Program 1:
+	6
+	6
+
+   Program 2:
+   	6
+
+
+			      
+			    
