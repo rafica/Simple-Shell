@@ -4,9 +4,12 @@
 #include<unistd.h>
 #include<string.h>
 #include<stdbool.h>
+#include<dirent.h>
+#include<sys/stat.h>
+
 
 char* get_input();
-bool process_string(char* str[], int i);
+int process_string(char* str[], int i);
 
 extern int errno;
 char *path="";
@@ -14,19 +17,13 @@ char *path="";
 int main(){
 	
 	char *command;
-
-//	path = "";
-
-	int max_commands = 10;
-	int y =0;
 	char *token;
 	char *arg[100];
 	int i=0;
 	bool carryOn;
 
-	while(y<max_commands){
-		y++;
-		//display $
+	while(true){
+		
 		printf("$");
 
 
@@ -38,17 +35,18 @@ int main(){
 			token = strtok(NULL, " \t");
 		
 		}
-
+		arg[i] = NULL;
 		carryOn = process_string(arg,i);	
+		
 		i=0;	
-	        //after using the command
+	       
 		if(command)
 			free(command);
 		command = NULL;
 
 		if(!carryOn)
 			break;
-		
+		printf("waiting for next \n");		
 	}
 	return 0;
 }
@@ -74,14 +72,117 @@ char* concat(char *s1, char *s2){
 
 }
 
+char* general_concat(char *s1, char *s2){
+	char *result;
+	char *tmp = malloc(strlen(s1) + strlen(s2) + 1);
 
-bool process_string(char* str[], int len){
+	if(tmp==NULL){
+		return NULL;
+	}
+	else{
+		result = tmp;
+		strcpy(result, s1);		
+		if(strcmp(s1, "")!=0){
+			free(s1);
+		}
+		strcat(result, s2);
+
+		return result;
+	}
+
+}
+
+
+char* find_path(char *cmd){
+	char *token;
+	char *found=NULL;
+	char *tmp1 = malloc(strlen(path) + 1);
+	char *tmp;
+	char *result;
+	
+	if(tmp1==NULL){
+		return NULL;
+	}
+	else{
+		tmp = tmp1;
+		strcpy(tmp, path);		
+		
+	}
+
+	if(strcmp(tmp, "")==0)
+		return NULL;
+	
+	token = strtok(tmp, ":");
+	while(token != NULL){
+		
+		if(isPresent(cmd, token)){
+			result = malloc(strlen(token) +1);
+			strcpy(result, token);
+			found = result;
+			break;
+		}
+		
+		
+		token = strtok(NULL, ":");
+	
+	}
+	free(tmp);
+	tmp = NULL;
+
+	return result;
+
+}
+
+
+int isPresent(char* cmd, char* dir){
+	DIR *dp;
+	struct dirent *entry;
+	struct stat statbuf;
+	char cwd[1024];
+	int found = 0;
+	
+	if((dp = opendir(dir))==NULL){
+		return 0;
+	}
+	if(getcwd(cwd, sizeof(cwd)) == NULL){
+		printf("cwd error\n");
+		return 0;
+	}
+	
+
+	chdir(dir);
+
+	while((entry = readdir(dp))!= NULL){
+		lstat(entry->d_name, &statbuf);
+		if(S_ISDIR(statbuf.st_mode)==0){
+			if(strcmp(entry->d_name, cmd)==0){
+				found = 1;
+				break;
+			}
+		}
+	
+	}
+	chdir(cwd);
+
+	closedir(dp);
+
+	return found;
+}
+
+int process_string(char* str[], int len){
 	
 	char *directory;
+	char *token;
+	char *newPath="";
+	pid_t child_pid;
 	
+	char *foundPath;
+
+	int pid;
 	if(len>0 && strcmp(str[0], "exit")==0){
 		return 0;
 	}
+
 	else if(len>1 && strcmp(str[0], "cd")==0){
 		directory = str[1];
 		printf("%s ", directory);
@@ -103,13 +204,55 @@ bool process_string(char* str[], int len){
 				}
 			}
 			else if(strcmp(str[1], "-")==0){
-			//do this
+				if(strcmp(path, "")!=0){
+						
+					token = strtok(path, ":");
+					while(token != NULL){
+						
+						if(strcmp(token, str[2])!=0){
+							newPath = concat(newPath, token);
+						}
+						
+						token = strtok(NULL, ":");
+					
+					}
+				
+					free(path);
+					path = NULL;	
+					
+					path = newPath;
+		
+				
+				}	
+			
 				
 			}
 		}
 		
 	}	
 
+	else if(len>0){
+		foundPath = find_path(str[0]);
+			
+		if((child_pid=fork())<0){
+			printf("error: Fork failure\n");
+			
+		}
+
+		else if(child_pid==0){
+			foundPath = general_concat(foundPath, "/");
+			foundPath = general_concat(foundPath, str[0]);	
+			execv(foundPath , str);
+			_exit(1);
+		
+		}
+		else{
+			wait();	
+		}
+
+
+
+	}
 	return 1;
 
 
@@ -129,7 +272,6 @@ char* get_input(){
 		tmp = NULL;
 	}
 	else{
-		//fprintf(stderr, "Error allocating space :%s", strerror(errno));
 		printf("Error : %s", strerror(errno));
 		return NULL;	
 	}
@@ -155,7 +297,7 @@ char* get_input(){
 				}
 				else{
 					printf("Error : %s\n", strerror(errno));
-					//flushing the input
+				
 					while((next=getchar())!='\n' && next!= EOF);
 
 					free(ptr);
