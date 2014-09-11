@@ -1,3 +1,12 @@
+1) An operating system which runs on top of another operating system is called a virtual machine. The host operating system acts as a referee and decides how much of memory and other resources should be allocated to the guest operating system. Since it is provided with only limited resources by the host operating system, the primary design goal has to be efficiency and low overhead.
+
+2) For the computer I am using, the given characteristics can be prioritized in the following manner:
+  a) Reliability: This is the most important feature which needs to be considered while designing the OS for my computer. Reliability means that the system does exactly what it is designed to do. Since the operating system abstracts the functions of hardware, it becomes very difficult to fix a bug by myself. It can even result loss of data.
+  b) Performance: Performance is also important for the computer I work with. Since there are multiple applications running in my system at the same time, I dont want the system to slow down. 
+  c) Security: Since my computer is connected to internet most of the time, data in my system should be protected from other people connected in the same network. If I download a malicious file from the internet, my computer shouldn't get affected by it.
+  d) Portability: I should be able to open the files created in Windows in my Mac OS or vice versa
+  e) Adoption: It is definitely a plus if there are useful preinstalled applications in my OS.
+
 3) Yes. On error, fork returns -1 and errno variable is set to indicate the type of error. Error can occur on following conditions:
 	*  If the limit on total number of processes under execution is exceeded.
 	*  If the limit on total number of processes under execution by a single user is exceeded.
@@ -11,7 +20,7 @@
 Each process creates a copy of itself and while gets executed infinite times in each process creating infinite number of processes exponentially. The condition in the while loop will always be true except when the fork() returns -1 on error. 
 This is called a fork bomb and causes depletion of system resources. This results in crashing of the system.
 
-6) 
+6) If a child has changed state, then the wait returns immediately and succesfully. A state change happens when a child is terminated, stopped by a signal or resumed by a signal. 
 
 7) If I run exec ls, ls program gets executed and then the shell gets terminated.
     Why? because exec wipes out the current program and replaces the current program space with the new program. Hence after the new program gets executed, the shell program doesnt wait for the ls program and terminates.
