@@ -195,21 +195,21 @@ int create_process(int in, int out, char *arg[])
 		if (in != 0) {
 			if (dup2(in, 0) == -1) {
 				printf("error: %s\n", strerror(errno));
-				return 0;
+				exit(10);
 			}
 			if (close(in) == -1) {
 				printf("error: %s\n", strerror(errno));
-				return 0;
+				exit(10);
 			}
 		}
 		if (out != 1) {
 			if (dup2(out, 1) == -1) {
 				printf("error: %s\n", strerror(errno));
-				return 0;
+				exit(10);
 			}
 			if (close(out) == -1) {
 				printf("error: %s\n", strerror(errno));
-				return 0;
+				exit(10);
 			}
 		}
 		/* execute the command as it is */
@@ -221,7 +221,7 @@ int create_process(int in, int out, char *arg[])
 		if (foundPath == NULL) {
 			if (dup2(stdout_copy, STDOUT_FILENO) == -1) {
 				printf("error: %s\n", strerror(errno));
-				return 0;
+				exit(10);
 			}
 			printf("error: command not found\n");
 			exit(10);
@@ -232,7 +232,7 @@ int create_process(int in, int out, char *arg[])
 		execv(foundPath , arg);
 		if (dup2(stdout_copy, STDOUT_FILENO) == -1) {
 			printf("error: %s\n", strerror(errno));
-			return 0;
+			exit(10);
 		}
 		printf("error: %s", strerror(errno));
 		exit(10);
