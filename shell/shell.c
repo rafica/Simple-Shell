@@ -22,8 +22,8 @@ int isspace(int c);
 
 extern int errno;
 char *path = "";
- 	int stdin_copy;
-	int stdout_copy;
+int stdin_copy;
+int stdout_copy;
 
 int main(void)
 {
@@ -32,24 +32,22 @@ int main(void)
 	char *arg[100];
 	int i = 0;
 	int carryOn;
-	int stdin_copy = dup(STDIN_FILENO);
-	int stdout_copy = dup(STDOUT_FILENO);
+
+	stdin_copy = dup(STDIN_FILENO);
+	stdout_copy = dup(STDOUT_FILENO);
 	while (1) {
 		printf("$");
-		
 		dup2(stdin_copy, STDIN_FILENO);
 		dup2(stdout_copy, STDOUT_FILENO);
-		command = get_input();	
+		command = get_input();
 		command = trim_white_space(command);
 		if (strstr(command, "|") != NULL) {
-			process_pipe(command);	
+			process_pipe(command);
 			if (command)
 				free(command);
 			command = NULL;
-
 			continue;
 		}
-		
 		token = strtok(command, " \t");
 		while (token != NULL) {
 			arg[i++] = token;
@@ -67,77 +65,68 @@ int main(void)
 	return 0;
 }
 
-char *trim_white_space(char *str) 
+char *trim_white_space(char *str)
 {
 	size_t len = 0;
 	char *frontp = str;
 	char *endp = NULL;
 
-	if ( str == NULL ) 
+	if (str == NULL)
 		return NULL;
-	if( str[0] == '\0')
+	if (str[0] == '\0')
 		return str;
 	len = strlen(str);
 	endp = str + len;
-
-	while( isspace(*frontp) ) 
+	while (isspace(*frontp))
 		++frontp;
-	
 	if (endp != frontp) {
-		while( isspace(*(--endp)) && endp !=frontp) {}
+		while (isspace(*(--endp)) && endp != frontp)
+			;
 	}
-
 	if (str + len - 1 != endp)
 		*(endp + 1) = '\0';
-	else if( frontp != str && endp == frontp)
+	else if (frontp != str && endp == frontp)
 		*str = '\0';
-	
 	endp = str;
-	if ( frontp != str)
-	{
-		while( *frontp) {
+	if (frontp != str) {
+		while (*frontp)
 			*endp++ = *frontp++;
-		}
 		*endp = '\0';
 	}
 	return str;
 }
 
-void process_pipe(char *commands) 
-{      
-	int pipe_flag = 0 ;
+void process_pipe(char *commands)
+{
+	int pipe_flag = 0;
 	int c  = 0;
-	
-	for(c = 0; c < strlen(commands); c ++ ) {
+
+	for (c = 0; c < strlen(commands); c++) {
 		char ch = commands[c];
-		
+
 		if (c == 0 && ch == '|') {
 			printf("error: Command not found\n");
 			return;
 		}
-		else if (c == (strlen(commands) - 1) && ch == '|') {
+		if (c == (strlen(commands) - 1) && ch == '|') {
 			printf("error: command not found\n");
 			return;
 		}
-		else if ( ch == '|' && pipe_flag == 1) {
+		if (ch == '|' && pipe_flag == 1) {
 			printf("error: Command not found\n");
 			return;
 		}
-		else if ( ch == '|' && pipe_flag == 0) {
+		if (ch == '|' && pipe_flag == 0)
 			pipe_flag = 1;
-		}	
 		else if (pipe_flag == 1 && ch != ' ')
 			pipe_flag = 0;
-
 	}
-
-
 	char *token;
 	int cmdNo = 0;
-	
 	char *tmp1 = malloc(strlen(commands) + 1);
 	char *tmp;
 	int i = 0;
+
 	if (tmp1 == NULL)
 		return;
 	tmp = tmp1;
@@ -151,38 +140,35 @@ void process_pipe(char *commands)
 	free(tmp);
 	tmp =  NULL;
 	tmp1 = malloc(strlen(commands) + 1);
-	if(tmp1 == NULL)
+	if (tmp1 == NULL)
 		return;
 	tmp = tmp1;
 	strcpy(tmp, commands);
 	char *cmd[cmdNo];
+
 	token = strtok(tmp, "|");
-	while ( token != NULL) {
+	while (token != NULL) {
 		cmd[i] = token;
 		token = strtok(NULL, "|");
 		i++;
 	}
-	
 	execute_pipe(cmdNo, cmd);
 
 }
 
 int create_process(int in, int out, char *arg[])
 {
-	pid_t child_pid = fork();		
-
+	pid_t child_pid = fork();
 
 	if (child_pid < 0)
 		printf("error: Fork failure\n");
-
-	if (child_pid > 0) {
+	else if (child_pid > 0) {
 		int status;
+
 		waitpid(child_pid, &status, 0);
-		if(WEXITSTATUS(status)) {
+		if (WEXITSTATUS(status))
 			return 0;
-		}
-	} 
-	else if (child_pid == 0) {
+	} else if (child_pid == 0) {
 		if (in != 0) {
 			dup2(in, 0);
 			close(in);
@@ -204,23 +190,23 @@ int create_process(int in, int out, char *arg[])
 		foundPath = general_concat(foundPath, arg[0]);
 		execv(foundPath , arg);
 		dup2(stdout_copy, STDOUT_FILENO);
-
 		printf("error: %s", strerror(errno));
 		exit(10);
 	}
-
 	return 1;
 }
 
-void execute_pipe(int n, char *cmd[]) 
+void execute_pipe(int n, char *cmd[])
 {
 	int i;
 	int in, fileDesc[2];
 	char *arg[100];
+
 	in = 0;
 	char *token;
 	int j;
-	for(i = 0; i < n-1; i++) {
+
+	for (i = 0; i < n-1; i++) {
 		j = 0;
 		pipe(fileDesc);
 		token = strtok(cmd[i], " \t");
@@ -229,15 +215,13 @@ void execute_pipe(int n, char *cmd[])
 			token = strtok(NULL, " \t");
 		}
 		arg[j] = NULL;
-		if ( !create_process(in, fileDesc[1], arg)) {
+		if (!create_process(in, fileDesc[1], arg))
 			return;
-		}
 		close(fileDesc[1]);
 		in = fileDesc[0];
 	}
-	if(in != 0)
+	if (in != 0)
 		dup2(in, 0);
-	
 	j = 0;
 	token = strtok(cmd[i], " \t");
 	while (token != NULL) {
@@ -246,29 +230,26 @@ void execute_pipe(int n, char *cmd[])
 	}
 	arg[j] = NULL;
 	int child_pid = fork();
+
 	if (child_pid > 0) {
 		int status;
 
-		wait( &status);
-	} 
-	else if(child_pid == 0){
-		execv(arg[0], arg);	
-		
-		char *foundPath = find_path(arg[0]);	
+		wait(&status);
+	} else if (child_pid == 0) {
+		execv(arg[0], arg);
+		char *foundPath = find_path(arg[0]);
+
 		if (foundPath == NULL) {
 			printf("error: Command not found here\n");
 			exit(1);
 		}
 		foundPath = general_concat(foundPath, "/");
 		foundPath = general_concat(foundPath, arg[0]);
-	
-
 		execv(foundPath, arg);
 		printf("error: %s\n", strerror(errno));
 		exit(1);
-	}
-	else {
-		printf("fork error \n");
+	} else {
+		printf("error: %s\n", strerror(errno));
 		return;
 	}
 }
@@ -314,9 +295,9 @@ char *find_path(char *cmd)
 	char *token;
 	char *tmp1 = malloc(strlen(path) + 1);
 	char *tmp;
-	char *result= NULL;
+	char *result = NULL;
 	char *tresult;
-	
+
 	if (tmp1 == NULL)
 		return NULL;
 	tmp = tmp1;
@@ -327,15 +308,13 @@ char *find_path(char *cmd)
 	while (token != NULL) {
 		if (isPresent(cmd, token)) {
 			tresult = malloc(strlen(token) + 1);
-			if (tresult==NULL) {
+			if (tresult == NULL) {
 				result =  NULL;
 				break;
-			} 
-			else {
-				result = tresult;
-				strcpy(result, token);
-				break;
 			}
+			result = tresult;
+			strcpy(result, token);
+			break;
 		}
 		token = strtok(NULL, ":");
 	}
@@ -426,9 +405,8 @@ int process_string(char *str[], int len)
 		if (child_pid > 0) {
 			int status;
 
-			wait( &status);
-		} 
-		else if (child_pid == 0) {
+			wait(&status);
+		} else if (child_pid == 0) {
 			execv(str[0], str);
 			if (strcmp(path, "") == 0) {
 				printf("error: Command not found\n");
@@ -444,23 +422,21 @@ int process_string(char *str[], int len)
 			execv(foundPath , str);
 			printf("error: %s\n", strerror(errno));
 			exit(1);
-		}
-		else
+		} else
 			printf("error: Fork failure\n");
-		
 	}
 	return 1;
 
 }
 
 char *get_input()
-{	
+{
 	unsigned int len_max = 128;
 	unsigned int current_size = 0;
 	char *ptr;
 	char *tmp = malloc(len_max);
 
-	if (tmp!= NULL) {
+	if (tmp != NULL) {
 		ptr = tmp;
 		tmp = NULL;
 	} else {
