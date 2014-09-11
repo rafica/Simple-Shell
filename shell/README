@@ -1,0 +1,24 @@
+Code Structure
+**************
+List of functions:
+ * main
+ * get_input
+ * process_string
+ * find_path
+ * process_pipe
+ * execute_pipe
+ * trim_white_space
+ * concat
+ * general_concat
+
+ In "main", Initially the file descriptors of stdin and stdout are saved.
+ "get_input" is called which gets the input character by character till \n is pressed
+The input string is then trimmed of leading and trailing white space
+The string is checked if it has pipe. If it has, "process_pipe" is called
+If it doesnt have pipe, tokenize the string into an array and pass it to "process_string"
+Depending on the return value of process_string the shell continues or exits.
+
+Error handling:
+Handled all system calls.
+
+

@@ -33,14 +33,29 @@ int main(void)
 	int i = 0;
 	int carryOn;
 
+	/* making a copy of the default input and output file handlers.
+	stdin and stdout file handlers
+		are changed later */
 	stdin_copy = dup(STDIN_FILENO);
 	stdout_copy = dup(STDOUT_FILENO);
+	if (stdin_copy < 0 || stdout_copy < 0) {
+		printf("error: %s\n", strerror(errno));
+		return 0;
+	}
 	while (1) {
 		printf("$");
-		dup2(stdin_copy, STDIN_FILENO);
-		dup2(stdout_copy, STDOUT_FILENO);
+		int t1 = dup2(stdin_copy, STDIN_FILENO);
+		int t2 = dup2(stdout_copy, STDOUT_FILENO);
+
+		if (t1 < 0 && t2 < 0) {
+			printf("error: %s\n", strerror(errno));
+			break;
+		}
 		command = get_input();
+		/*trim leading and trailing whitespae */
 		command = trim_white_space(command);
+		/*check if there is pipe. if there is,
+		its processed in process_pipe() */
 		if (strstr(command, "|") != NULL) {
 			process_pipe(command);
 			if (command)
@@ -48,6 +63,7 @@ int main(void)
 			command = NULL;
 			continue;
 		}
+		/*tokenized*/
 		token = strtok(command, " \t");
 		while (token != NULL) {
 			arg[i++] = token;
@@ -64,7 +80,7 @@ int main(void)
 	}
 	return 0;
 }
-
+/*trims leading and trailing white space */
 char *trim_white_space(char *str)
 {
 	size_t len = 0;
@@ -101,6 +117,8 @@ void process_pipe(char *commands)
 	int pipe_flag = 0;
 	int c  = 0;
 
+	/*check if the pipe command is not syntactically correct */
+	/*if command starts with pipe, ends with pipe or two consecutive pipes*/
 	for (c = 0; c < strlen(commands); c++) {
 		char ch = commands[c];
 
@@ -118,7 +136,7 @@ void process_pipe(char *commands)
 		}
 		if (ch == '|' && pipe_flag == 0)
 			pipe_flag = 1;
-		else if (pipe_flag == 1 && ch != ' ')
+		else if (pipe_flag == 1 && ch != ' ' && ch != '\t')
 			pipe_flag = 0;
 	}
 	char *token;
@@ -127,11 +145,11 @@ void process_pipe(char *commands)
 	char *tmp;
 	int i = 0;
 
+	/*tokenizing over pipe */
 	if (tmp1 == NULL)
 		return;
 	tmp = tmp1;
 	strcpy(tmp, commands);
-
 	token = strtok(tmp, "|");
 	while (token != NULL) {
 		cmdNo = cmdNo + 1;
@@ -152,6 +170,7 @@ void process_pipe(char *commands)
 		token = strtok(NULL, "|");
 		i++;
 	}
+	/*after tokenizing the cmd & validation, this func processes */
 	execute_pipe(cmdNo, cmd);
 
 }
@@ -165,31 +184,56 @@ int create_process(int in, int out, char *arg[])
 	else if (child_pid > 0) {
 		int status;
 
-		waitpid(child_pid, &status, 0);
+		if (waitpid(child_pid, &status, 0) == -1) {
+			printf("error: %s\n", strerror(errno));
+			return 0;
+		}
+		/* if any one of the pipe fails exit the command */
 		if (WEXITSTATUS(status))
 			return 0;
 	} else if (child_pid == 0) {
 		if (in != 0) {
-			dup2(in, 0);
-			close(in);
+			if (dup2(in, 0) == -1) {
+				printf("error: %s\n", strerror(errno));
+				return 0;
+			}
+			if (close(in) == -1) {
+				printf("error: %s\n", strerror(errno));
+				return 0;
+			}
 		}
 		if (out != 1) {
-			dup2(out, 1);
-			close(out);
+			if (dup2(out, 1) == -1) {
+				printf("error: %s\n", strerror(errno));
+				return 0;
+			}
+			if (close(out) == -1) {
+				printf("error: %s\n", strerror(errno));
+				return 0;
+			}
 		}
+		/* execute the command as it is */
 		execv(arg[0], arg);
 		char *foundPath;
 
+		/* if it fails find the path of the command */
 		foundPath = find_path(arg[0]);
 		if (foundPath == NULL) {
-			dup2(stdout_copy, STDOUT_FILENO);
+			if (dup2(stdout_copy, STDOUT_FILENO) == -1) {
+				printf("error: %s\n", strerror(errno));
+				return 0;
+			}
 			printf("error: command not found\n");
 			exit(10);
 		}
 		foundPath = general_concat(foundPath, "/");
 		foundPath = general_concat(foundPath, arg[0]);
+		/*execute with the found path */
 		execv(foundPath , arg);
-		dup2(stdout_copy, STDOUT_FILENO);
+		if (dup2(stdout_copy, STDOUT_FILENO) == -1) {
+			printf("error: %s\n", strerror(errno));
+			return 0;
+		}
 		printf("error: %s", strerror(errno));
 		exit(10);
 	}
@@ -208,20 +252,31 @@ void execute_pipe(int n, char *cmd[])
 
 	for (i = 0; i < n-1; i++) {
 		j = 0;
-		pipe(fileDesc);
+		/*get file descriptors*/
+		if (pipe(fileDesc) == -1) {
+			printf("error: %s\n", strerror(errno));
+			return;
+		}
+		/*tokenize*/
 		token = strtok(cmd[i], " \t");
 		while (token != NULL) {
 			arg[j++] = token;
 			token = strtok(NULL, " \t");
 		}
 		arg[j] = NULL;
+		/* change the input and output ends for the next command */
 		if (!create_process(in, fileDesc[1], arg))
 			return;
-		close(fileDesc[1]);
+		if (close(fileDesc[1]) == -1) {
+			printf("error: %s\n", strerror(errno));
+			return;
+		}
 		in = fileDesc[0];
 	}
-	if (in != 0)
-		dup2(in, 0);
+	if (in != 0) {
+		if (dup2(in, 0) == -1)
+			return;
+	}
 	j = 0;
 	token = strtok(cmd[i], " \t");
 	while (token != NULL) {
@@ -230,11 +285,14 @@ void execute_pipe(int n, char *cmd[])
 	}
 	arg[j] = NULL;
 	int child_pid = fork();
-
+	/*execute for the last command. output should be default stdout*/
 	if (child_pid > 0) {
 		int status;
 
-		wait(&status);
+		if (wait(&status) == -1) {
+			printf("error: %s\n", strerror(errno));
+			return;
+		}
 	} else if (child_pid == 0) {
 		execv(arg[0], arg);
 		char *foundPath = find_path(arg[0]);
@@ -253,7 +311,7 @@ void execute_pipe(int n, char *cmd[])
 		return;
 	}
 }
-
+/*function to concat two strings with : as separator*/
 char *concat(char *s1, char *s2)
 {
 	if (s1 == NULL || s2 == NULL)
@@ -272,7 +330,7 @@ char *concat(char *s1, char *s2)
 	strcat(result, s2);
 	return result;
 }
-
+/*function to concat two strings */
 char *general_concat(char *s1, char *s2)
 {
 	if (s1 == NULL || s2 == NULL)
@@ -289,7 +347,7 @@ char *general_concat(char *s1, char *s2)
 	strcat(result, s2);
 	return result;
 }
-
+/*find the path of the command from the path variable */
 char *find_path(char *cmd)
 {
 	char *token;
@@ -323,7 +381,7 @@ char *find_path(char *cmd)
 	return result;
 }
 
-
+/*check if the cmd is present in dir*/
 int isPresent(char *cmd, char *dir)
 {
 	DIR *dp;
@@ -352,7 +410,7 @@ int isPresent(char *cmd, char *dir)
 	closedir(dp);
 	return found;
 }
-
+/*remove a path from the path variable*/
 void remove_path(char *filePath)
 {
 	char *token;
@@ -370,7 +428,7 @@ void remove_path(char *filePath)
 	path = NULL;
 	path = newPath;
 }
-
+/* the main function which identifies what type of command it is*/
 int process_string(char *str[], int len)
 {
 	char *directory;
@@ -428,7 +486,7 @@ int process_string(char *str[], int len)
 	return 1;
 
 }
-
+/*get input from the user*/
 char *get_input()
 {
 	unsigned int len_max = 128;

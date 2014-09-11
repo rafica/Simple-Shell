@@ -1,0 +1,57 @@
+Script started on Thu 11 Sep 2014 02:04:53 PM EDT
+w4118@w4118:~/hmwk1/shell$ ./shell[K[K[K[K[K[K[Kgcc shell[K[K[K[K[K-o shelll[K shell.c
+w4118@w4118:~/hmwk1/shell$ ./shell
+$ls
+error: Command not found
+$path
+
+$path +
+error: Command not found
+$path -
+error: Command not found
+$path-
+error: Command not found
+$path + /bin           /bin/ls
+checkpatch.pl  hmwk1  Makefile	README	shell  shell.c	shell.o  test_cases.txt  w4118_sh
+$/bin. /ac at   cat    e  echo "hello"
+"hello"
+$path    /bin/ls | echo she
+error: Command not found here
+$/bin/ls | /bin/grep she
+shell
+shell.c
+shell.o
+$/bin/s ls||
+error: command not found
+$^[[B    / |||||
+error: Command not found
+$/ path
+
+$path + /bin
+$path _ + /usr/bin
+$grep      cat shell.c | grep found | grep not | gret p    e[          printf
+			printf("error: Command not found\n");
+			printf("error: command not found\n");
+			printf("error: Command not found\n");
+			printf("error: command not found\n");
+			printf("error: Command not found here\n");
+				printf("error: Command not found\n");
+				printf("error: Command not found\n");
+$grep
+Usage: grep [OPTION]... PATTERN [FILE]...
+Try 'grep --help' for more information.
+$pwd
+/home/w4118/hmwk1/shell
+$cd  cd hmwk1
+$cd
+error: Command not found
+$cd ..
+$ls
+checkpatch.pl  hmwk1  Makefile	README	shell  shell.c	shell.o  test_cases.txt  w4118_sh
+$pwd
+/home/w4118/hmwk1/shell
+$exit
+w4118@w4118:~/hmwk1/shell$ exit
+exit
+
+Script done on Thu 11 Sep 2014 02:20:57 PM EDT
