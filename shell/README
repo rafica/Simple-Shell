@@ -19,6 +19,9 @@ If it doesnt have pipe, tokenize the string into an array and pass it to "proces
 Depending on the return value of process_string the shell continues or exits.
 
 Error handling:
-Handled all system calls.
+Handled all system calls and printed the error messsages
+
+Test cases:
+The test runs are in test_cases.txt
 
 
